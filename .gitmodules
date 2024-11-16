@@ -7,3 +7,9 @@
 [submodule "flare_btc_hedge/lib/forge-std"]
 	path = flare_btc_hedge/lib/forge-std
 	url = https://github.com/foundry-rs/forge-std
+[submodule "flare_btc_hedge/lib/solidity-bytes-utils"]
+	path = flare_btc_hedge/lib/solidity-bytes-utils
+	url = https://github.com/GNSPS/solidity-bytes-utils
+[submodule "flare_btc_hedge/lib/LayerZero-v2"]
+	path = flare_btc_hedge/lib/LayerZero-v2
+	url = https://github.com/LayerZero-Labs/LayerZero-v2

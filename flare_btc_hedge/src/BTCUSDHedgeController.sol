@@ -5,7 +5,6 @@ pragma solidity ^0.8.20;
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
-
 contract BTCUSDHedgeController {
     // conroller states
     struct MarketState {
