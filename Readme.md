@@ -40,7 +40,15 @@ For full transparency you can see the first attempt here: https://github.com/end
 
 * https://sepolia.lineascan.build/address/0x3e65cabb59773a7d21132daaa587e7fc777d427c
 
+### Flare FTSO Oracle
 
+## Flare Controller
+
+* https://coston2.testnet.flarescan.com/address/0x18975871ab7E57e0f26fdF429592238541051Fb0
+
+* https://coston2.testnet.flarescan.com/token/0x30CCF5C0Ea4F871398136DD643A0544Aba39b26D
+
+* https://coston2.testnet.flarescan.com/address/0x981BeeCd15b05A35206cfc44af12373B45613E71
 
 ## Multi Chain Controller w/ Layer Zero
 
