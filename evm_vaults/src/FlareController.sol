@@ -2,8 +2,10 @@
 pragma solidity ^0.8.20;
 
 // test imports (not for production)
-import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
-import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+// import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
+// import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+import {FtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/FtsoV2Interface.sol";
+import {IFeeCalculator} from "@flarenetwork/flare-periphery-contracts/coston2/IFeeCalculator.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MarketCreator.sol";
 
@@ -23,7 +25,11 @@ contract FlareController is Ownable {
 
 
     // Flare FTSO states
-    TestFtsoV2Interface internal ftsoV2;
+    FtsoV2Interface internal ftsoV2;
+    IFeeCalculator internal feeCalc;
+    bytes21[] public feedIds;
+    uint256 public fee;
+    // TestFtsoV2Interface internal ftsoV2;
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21 public btcUsdId = 0x014254432f55534400000000000000000000000000;
 
@@ -44,11 +50,16 @@ contract FlareController is Ownable {
     error MarketAlreadyDelayed();
     error InvalidMaturityDate();
 
-    constructor() Ownable(msg.sender) {
+    constructor(address _ftsoV2, address _feeCalc) Ownable(msg.sender) {
         // market stuff 
         nextMarketId = 1; // Start from 1 instead of 0
+
         // Flare FTSO stuff
-        ftsoV2 = ContractRegistry.getTestFtsoV2(); // test only
+        // test only
+        // ftsoV2 = ContractRegistry.getTestFtsoV2(); 
+        ftsoV2 = FtsoV2Interface(_ftsoV2);
+        feeCalc = IFeeCalculator(_feeCalc);
+        feedIds.push(btcUsdId);
     }
 
     function setMarketCreator(address newMarketCreator) external onlyOwner {
@@ -56,6 +67,11 @@ contract FlareController is Ownable {
                 
         marketCreator = MarketCreator(newMarketCreator);
         emit MarketCreatorSet(newMarketCreator);
+    }
+
+    function checkFees() external returns (uint256 _fee) {
+        fee = feeCalc.calculateFeeByIds(feedIds);
+        return fee;
     }
 
     function initializeMarket(uint256 maturityDate, uint256 threshold) 
@@ -121,9 +137,9 @@ contract FlareController is Ownable {
         return nextMarketId - 1;
     }
 
-    function updateBtcUsdPrice() external returns (uint256, int8, uint64) {
+    function updateBtcUsdPrice() external payable returns (uint256, int8, uint64) {
         (uint256 feedValue, int8 decimals, uint64 timestamp) = ftsoV2
-            .getFeedById(btcUsdId);
+            .getFeedById{value: msg.value}(btcUsdId);
 
         btcPrice = feedValue;    
         return (feedValue, decimals, timestamp);
