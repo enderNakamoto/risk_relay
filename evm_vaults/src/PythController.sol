@@ -9,7 +9,7 @@ import "./MarketCreator.sol";
 contract PythController is Ownable {
 
     IPyth pyth;
-    MarketCreator public immutable marketCreator;
+    MarketCreator public marketCreator;
     
     struct MarketState {
         bool matured;
@@ -34,11 +34,18 @@ contract PythController is Ownable {
     event MarketMatured(uint256 indexed marketId);
     event MarketLiquidated(uint256 indexed marketId);
     event BTCPriceUpdated(uint256 price);
+    event MarketCreatorSet(address marketCreator);
+
     
-    constructor(address marketCreator_, address pythContract_) Ownable(msg.sender) {
-        require(marketCreator_ != address(0), "Invalid market creator address");
-        marketCreator = MarketCreator(marketCreator_);
+    constructor(address pythContract_) Ownable(msg.sender) {
         pyth = IPyth(pythContract_);
+    }
+
+    function setMarketCreator(address newMarketCreator) external onlyOwner {
+        require(newMarketCreator != address(0), "Invalid market creator address");
+                
+        marketCreator = MarketCreator(newMarketCreator);
+        emit MarketCreatorSet(newMarketCreator);
     }
 
     function initializeMarket(uint256 maturityDate, uint256 threshold) 
