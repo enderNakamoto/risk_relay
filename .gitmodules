@@ -19,3 +19,6 @@
 [submodule "flare_btc_hedge/lib/layerzero-v2"]
 	path = flare_btc_hedge/lib/layerzero-v2
 	url = https://github.com/LayerZero-Labs/layerzero-v2
+[submodule "flare_btc_hedge/lib/openzeppelin-contracts"]
+	path = flare_btc_hedge/lib/openzeppelin-contracts
+	url = https://github.com/OpenZeppelin/openzeppelin-contracts

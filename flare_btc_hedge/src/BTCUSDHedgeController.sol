@@ -5,7 +5,11 @@ pragma solidity ^0.8.20;
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
-contract BTCUSDHedgeController {
+import { OApp, Origin, MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
+// import {OAppSender, MessagingFee} from "layerzero-v2/oapp/contracts/oapp/OAppSender.sol";
+
+
+contract BTCUSDHedgeController is OApp {
     // conroller states
     struct MarketState {
         bool matured;
@@ -17,6 +21,9 @@ contract BTCUSDHedgeController {
     uint256 private nextMarketId;
     uint256 public btcPrice;
     mapping(uint256 => MarketState) public markets;
+
+    // LayerZero OApp states
+    string public data;
 
     // Flare FTSO states
     TestFtsoV2Interface internal ftsoV2;
@@ -40,9 +47,15 @@ contract BTCUSDHedgeController {
     error MarketAlreadyDelayed();
     error InvalidMaturityDate();
 
-    constructor() {
+    constructor(address _endpoint) OApp(_endpoint, msg.sender){
+        // market stuff 
         nextMarketId = 1; // Start from 1 instead of 0
+
+        // Flare FTSO stuff
         ftsoV2 = ContractRegistry.getTestFtsoV2(); // test only
+
+        // LayerZero OApp stuff
+
     }
 
     function initializeMarket(uint256 maturityDate, uint256 threshold) external returns (uint256 marketId) {
@@ -70,6 +83,7 @@ contract BTCUSDHedgeController {
         if (block.timestamp < market.maturityDate) revert MaturityDateNotPassed();
 
         market.matured = true;
+        // send message to mature
         emit MarketMatured(marketId);
     }
 
@@ -82,6 +96,7 @@ contract BTCUSDHedgeController {
         if (block.timestamp >= market.maturityDate) revert MaturityDateNotReached();
 
         market.liquidated = true;
+        // send message to liquidate
         emit MarketLiquidated(marketId);
     }
 
@@ -101,6 +116,39 @@ contract BTCUSDHedgeController {
 
         btcPrice = feedValue;    
         return (feedValue, decimals, timestamp);
+    }
+
+
+    // LayerZero OApp functions
+    function sendMessage(uint32 _dstEid, string memory _message, bytes calldata _options) external payable {
+     bytes memory _payload = abi.encode(_message); // Encode the message as bytes
+     _lzSend(
+           _dstEid,
+           _payload,
+           _options,
+           MessagingFee(msg.value, 0), // Fee for the message (nativeFee, lzTokenFee)
+           payable(msg.sender) // The refund address in case the send call reverts
+     );
+    }
+
+    // function estimateFee(
+    //  uint32 _dstEid,
+    //  string memory _message,
+    //  bytes calldata _options
+    // ) public view returns (uint256 nativeFee, uint256 lzTokenFee) {
+    //     bytes memory _payload = abi.encode(_message);
+    //     MessagingFee memory fee = _quote(_dstEid, _payload, _options, false);
+    //     return (fee.nativeFee, fee.lzTokenFee);
+    // }
+
+    function _lzReceive(
+     Origin calldata _origin,
+     bytes32 _guid,
+     bytes calldata payload,
+     address _executor,
+     bytes calldata _extraData
+    ) internal override {
+        data = abi.decode(payload, (string));
     }
 
 }
