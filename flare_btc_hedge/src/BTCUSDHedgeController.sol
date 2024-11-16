@@ -6,8 +6,6 @@ import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/
 import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
 
 import { OApp, Origin, MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
-// import {OAppSender, MessagingFee} from "layerzero-v2/oapp/contracts/oapp/OAppSender.sol";
-
 
 contract BTCUSDHedgeController is OApp {
     // conroller states
