@@ -4,9 +4,12 @@ pragma solidity ^0.8.20;
 // test imports (not for production)
 import {ContractRegistry} from "@flarenetwork/flare-periphery-contracts/coston2/ContractRegistry.sol";
 import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/coston2/TestFtsoV2Interface.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
+import "./MarketCreator.sol";
 
-contract FlareController {
+contract FlareController is Ownable {
     // conroller states
+    MarketCreator public marketCreator;
     struct MarketState {
         bool matured;
         uint256 maturityDate;
@@ -29,6 +32,7 @@ contract FlareController {
     event MarketMatured(uint256 indexed marketId);
     event MarketLiquidated(uint256 indexed marketId);
     event MarketDelayed(uint256 indexed marketId);
+    event MarketCreatorSet(address marketCreator);
 
     // errors
     error MarketNotFound();
@@ -40,19 +44,30 @@ contract FlareController {
     error MarketAlreadyDelayed();
     error InvalidMaturityDate();
 
-    constructor() {
+    constructor() Ownable(msg.sender) {
         // market stuff 
         nextMarketId = 1; // Start from 1 instead of 0
         // Flare FTSO stuff
         ftsoV2 = ContractRegistry.getTestFtsoV2(); // test only
-
     }
 
-    function initializeMarket(uint256 maturityDate, uint256 threshold) external returns (uint256 marketId) {
+    function setMarketCreator(address newMarketCreator) external onlyOwner {
+        require(newMarketCreator != address(0), "Invalid market creator address");
+                
+        marketCreator = MarketCreator(newMarketCreator);
+        emit MarketCreatorSet(newMarketCreator);
+    }
+
+    function initializeMarket(uint256 maturityDate, uint256 threshold) 
+        external 
+        returns (uint256 marketId) 
+    {
         if (maturityDate <= block.timestamp) revert InvalidMaturityDate();
         
-        marketId = nextMarketId++;
-
+        // Create vaults first
+        (marketId, , ) = marketCreator.createMarketVaults();
+        
+        // Initialize market state
         markets[marketId] = MarketState({
             matured: false,
             maturityDate: maturityDate,
@@ -73,6 +88,10 @@ contract FlareController {
         if (block.timestamp < market.maturityDate) revert MaturityDateNotPassed();
 
         market.matured = true;
+        
+        // Execute maturity on market creator
+        marketCreator.controllerMature(marketId);
+        
         emit MarketMatured(marketId);
     }
 
@@ -85,6 +104,10 @@ contract FlareController {
         if (block.timestamp >= market.maturityDate) revert MaturityDateNotReached();
 
         market.liquidated = true;
+        
+        // Execute liquidation on market creator
+        marketCreator.controllerLiquidate(marketId);
+        
         emit MarketLiquidated(marketId);
     }
 
