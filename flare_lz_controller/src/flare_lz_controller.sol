@@ -7,7 +7,7 @@ import {TestFtsoV2Interface} from "@flarenetwork/flare-periphery-contracts/costo
 
 import { OApp, Origin, MessagingFee } from "@layerzerolabs/lz-evm-oapp-v2/contracts/oapp/OApp.sol";
 
-contract BTCUSDHedgeController is OApp {
+contract FlareLzController is OApp {
     // conroller states
     struct MarketState {
         bool matured;
