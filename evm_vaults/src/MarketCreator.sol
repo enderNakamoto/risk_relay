@@ -23,6 +23,14 @@ contract MarketCreator {
         address indexed riskVault,
         address indexed hedgeVault
     );
+
+    error VaultsNotFound();
+    error NotController();
+    
+    modifier onlyController() {
+        if (msg.sender != controller) revert NotController();
+        _;
+    }
     
     constructor(address controller_, address asset_) {
         require(controller_ != address(0), "Invalid controller address");
@@ -30,6 +38,32 @@ contract MarketCreator {
         controller = controller_;
         asset = IERC20(asset_);
         nextMarketId = 1;
+    }
+
+    function controllerLiquidate(uint256 marketId) external onlyController {
+        MarketVaults memory vaults = marketVaults[marketId];
+        if (vaults.riskVault == address(0)) revert VaultsNotFound();
+        
+        // Get total assets in Risk Vault
+        uint256 riskAssets = IERC20(asset).balanceOf(vaults.riskVault);
+        
+        // Move all assets from Risk to Hedge vault
+        if (riskAssets > 0) {
+            RiskVault(vaults.riskVault).transferAssets(vaults.hedgeVault, riskAssets);
+        }
+    }
+
+    function controllerMature(uint256 marketId) external onlyController {
+        MarketVaults memory vaults = marketVaults[marketId];
+        if (vaults.riskVault == address(0)) revert VaultsNotFound();
+        
+        // Get total assets in Hedge Vault
+        uint256 hedgeAssets = IERC20(asset).balanceOf(vaults.hedgeVault);
+        
+        // Move all assets from Hedge to Risk vault
+        if (hedgeAssets > 0) {
+            HedgeVault(vaults.hedgeVault).transferAssets(vaults.riskVault, hedgeAssets);
+        }
     }
     
     function createMarketVaults() 
@@ -84,7 +118,7 @@ contract MarketCreator {
         ) 
     {
         MarketVaults memory vaults = marketVaults[marketId];
-        require(vaults.riskVault != address(0), "Market does not exist");
+        if (vaults.riskVault == address(0)) revert VaultsNotFound();
         return (vaults.riskVault, vaults.hedgeVault);
     }
 }

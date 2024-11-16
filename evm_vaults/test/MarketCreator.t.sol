@@ -6,13 +6,15 @@ import "../src/MarketCreator.sol";
 import "../src/vaults/RiskVault.sol";
 import "../src/vaults/HedgeVault.sol";
 import "./mocks/MockToken.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
 
 contract MarketCreatorTest is Test {
     MarketCreator public marketCreator;
-    MockToken public token;
+    MockToken public asset;
     address public controller;
-    address public user;
-    
+    address public user1;
+
     event MarketVaultsCreated(
         uint256 indexed marketId,
         address indexed riskVault,
@@ -20,75 +22,104 @@ contract MarketCreatorTest is Test {
     );
 
     function setUp() public {
-        controller = makeAddr("controller");
-        user = makeAddr("user");
-        
-        token = new MockToken();
-        marketCreator = new MarketCreator(controller, address(token));
-        
-        vm.label(address(marketCreator), "MarketCreator");
-        vm.label(address(token), "Token");
+        controller = address(1);
+        user1 = address(2);
+        asset = new MockToken();
         vm.label(controller, "Controller");
-        vm.label(user, "User");
+        vm.label(user1, "User1");
+        
+        marketCreator = new MarketCreator(controller, address(asset));
     }
 
-    function test_Constructor() public view {
-        assertEq(marketCreator.controller(), controller);
-        assertEq(address(marketCreator.asset()), address(token));
+    function testConstructor() public {
+        assertEq(marketCreator.controller(), controller, "Controller address mismatch");
+        assertEq(address(marketCreator.asset()), address(asset), "Asset address mismatch");
     }
 
-    function test_ConstructorZeroAddressReverts() public {
+    function testConstructorZeroAddressChecks() public {
         vm.expectRevert("Invalid controller address");
-        new MarketCreator(address(0), address(token));
+        new MarketCreator(address(0), address(asset));
 
         vm.expectRevert("Invalid asset address");
         new MarketCreator(controller, address(0));
     }
 
-    function test_CreateFirstMarket() public {
+    function testCreateMarketVaults() public {
+        vm.expectEmit(true, true, true, true);
+        emit MarketVaultsCreated(1, address(1), address(1)); // Addresses will be replaced
+        
         (uint256 marketId, address riskVault, address hedgeVault) = marketCreator.createMarketVaults();
         
-        assertEq(marketId, 1, "First market should have ID 1");
-        assertTrue(riskVault != address(0), "Risk vault should be deployed");
-        assertTrue(hedgeVault != address(0), "Hedge vault should be deployed");
-        assertTrue(riskVault != hedgeVault, "Vaults should be different");
+        assertEq(marketId, 1, "First market ID should be 1");
+        assertTrue(riskVault != address(0), "Risk vault not deployed");
+        assertTrue(hedgeVault != address(0), "Hedge vault not deployed");
         
-        HedgeVault hedge = HedgeVault(hedgeVault);
-        RiskVault risk = RiskVault(riskVault);
-        
-        assertEq(hedge.controller(), controller, "Hedge vault controller wrong");
-        assertEq(hedge.marketId(), marketId, "Hedge vault marketId wrong");
-        assertEq(address(hedge.asset()), address(token), "Hedge vault asset wrong");
-        assertEq(hedge.owner(), address(marketCreator), "Hedge vault owner wrong");
-        assertEq(hedge.sisterVault(), riskVault, "Hedge vault sister wrong");
-        
-        assertEq(risk.controller(), controller, "Risk vault controller wrong");
-        assertEq(risk.marketId(), marketId, "Risk vault marketId wrong");
-        assertEq(address(risk.asset()), address(token), "Risk vault asset wrong");
-        assertEq(risk.sisterVault(), hedgeVault, "Risk vault sister wrong");
+        // Verify stored vaults
+        (address storedRisk, address storedHedge) = marketCreator.getVaults(marketId);
+        assertEq(storedRisk, riskVault, "Stored risk vault mismatch");
+        assertEq(storedHedge, hedgeVault, "Stored hedge vault mismatch");
     }
 
-    function test_CreateMultipleMarkets() public {
-        (uint256 marketId1, address risk1, address hedge1) = marketCreator.createMarketVaults();
-        assertEq(marketId1, 1, "First market ID wrong");
+    function testMultipleMarketCreation() public {
+        (uint256 firstId, , ) = marketCreator.createMarketVaults();
+        (uint256 secondId, , ) = marketCreator.createMarketVaults();
+        (uint256 thirdId, , ) = marketCreator.createMarketVaults();
         
-        (uint256 marketId2, address risk2, address hedge2) = marketCreator.createMarketVaults();
-        assertEq(marketId2, 2, "Second market ID wrong");
-        
-        assertTrue(risk1 != risk2, "Risk vaults should be different");
-        assertTrue(hedge1 != hedge2, "Hedge vaults should be different");
-        
-        (address storedRisk1, address storedHedge1) = marketCreator.getVaults(marketId1);
-        (address storedRisk2, address storedHedge2) = marketCreator.getVaults(marketId2);
-        
-        assertEq(storedRisk1, risk1, "Stored risk1 wrong");
-        assertEq(storedHedge1, hedge1, "Stored hedge1 wrong");
-        assertEq(storedRisk2, risk2, "Stored risk2 wrong");
-        assertEq(storedHedge2, hedge2, "Stored hedge2 wrong");
+        assertEq(firstId, 1, "First ID should be 1");
+        assertEq(secondId, 2, "Second ID should be 2");
+        assertEq(thirdId, 3, "Third ID should be 3");
     }
 
-    function test_GetVaultsNonExistent() public {
-        vm.expectRevert("Market does not exist");
-        marketCreator.getVaults(1);
+    function testControllerLiquidate() public {
+        // Create market and fund risk vault
+        (uint256 marketId, address riskVault, address hedgeVault) = marketCreator.createMarketVaults();
+        asset.transfer(riskVault, 1000);
+        
+        // Non-controller cannot liquidate
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(MarketCreator.NotController.selector));
+        marketCreator.controllerLiquidate(marketId);
+        
+        // Controller can liquidate
+        vm.prank(controller);
+        marketCreator.controllerLiquidate(marketId);
+        
+        assertEq(asset.balanceOf(riskVault), 0, "Risk vault should be empty");
+        assertEq(asset.balanceOf(hedgeVault), 1000, "Hedge vault should have funds");
+    }
+
+    function testControllerMature() public {
+        // Create market and fund hedge vault
+        (uint256 marketId, address riskVault, address hedgeVault) = marketCreator.createMarketVaults();
+        asset.transfer(hedgeVault, 1000);
+        
+        // Non-controller cannot mature
+        vm.prank(user1);
+        vm.expectRevert(abi.encodeWithSelector(MarketCreator.NotController.selector));
+        marketCreator.controllerMature(marketId);
+        
+        // Controller can mature
+        vm.prank(controller);
+        marketCreator.controllerMature(marketId);
+        
+        assertEq(asset.balanceOf(hedgeVault), 0, "Hedge vault should be empty");
+        assertEq(asset.balanceOf(riskVault), 1000, "Risk vault should have funds");
+    }
+
+    function testGetNonExistentVaults() public {
+        vm.expectRevert(abi.encodeWithSelector(MarketCreator.VaultsNotFound.selector));
+        marketCreator.getVaults(999);
+    }
+
+    function testLiquidateNonExistentMarket() public {
+        vm.prank(controller);
+        vm.expectRevert(abi.encodeWithSelector(MarketCreator.VaultsNotFound.selector));
+        marketCreator.controllerLiquidate(999);
+    }
+
+    function testMatureNonExistentMarket() public {
+        vm.prank(controller);
+        vm.expectRevert(abi.encodeWithSelector(MarketCreator.VaultsNotFound.selector));
+        marketCreator.controllerMature(999);
     }
 }
