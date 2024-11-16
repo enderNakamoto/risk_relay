@@ -16,3 +16,6 @@
 [submodule "flare_btc_hedge/lib/devtools"]
 	path = flare_btc_hedge/lib/devtools
 	url = https://github.com/LayerZero-Labs/devtools
+[submodule "flare_btc_hedge/lib/layerzero-v2"]
+	path = flare_btc_hedge/lib/layerzero-v2
+	url = https://github.com/LayerZero-Labs/layerzero-v2
