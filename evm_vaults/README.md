@@ -56,3 +56,35 @@ The vaults inherit from the **ERC4626** standard, which provides a standard inte
 The tests provided in the project demonstrate the expected usage and behavior of the system.
 
 
+## With Pyth Controller - Pyth as Price Oracle
+- Mantle, Morph , Linea 
+
+```mermaid
+    %% Control flows
+    PC --> |Liquidate/Mature| MC
+    MC --> |Transfer assets| HV
+    MC --> |Transfer assets| RV
+    HV <--> |Sister vault transfers| RV
+    
+    %% Oracle interaction
+    PYTH --> |BTC Price Updates| PC
+    
+    %% Additional annotations
+    classDef controller fill:#f96
+    classDef vault fill:#9cf
+    classDef external fill:#fcf
+    
+    class PC controller
+    class HV,RV vault
+    class PYTH,USDC external
+    
+    %% Add notes
+    note1[Price feeds for<br>liquidation conditions]
+    note2[Vault pair for each market]
+    note3[Asset transfers during<br>liquidation/maturity]
+    
+    PYTH --> note1
+    MC --> note2
+    HV --> note3
+    RV --> note3
+   ``` 
