@@ -16,6 +16,29 @@ For full transparency you can see the first attempt here: https://github.com/end
 
 ![alt text](image.png)
 
+#### Mantle: 
+
+* https://explorer.sepolia.mantle.xyz/address/0x18975871ab7e57e0f26fdf429592238541051fb0
+
+* https://explorer.sepolia.mantle.xyz/address/0x30ccf5c0ea4f871398136dd643a0544aba39b26d    
+
+* https://explorer.sepolia.mantle.xyz/address/0x981beecd15b05a35206cfc44af12373b45613e71
+
+#### Morph: 
+
+* https://explorer-api-holesky.morphl2.io/address/0x18975871ab7e57e0f26fdf429592238541051fb0
+
+* https://explorer-api-holesky.morphl2.io/address/0x981beecd15b05a35206cfc44af12373b45613e71
+
+#### Linea 
+
+* https://sepolia.lineascan.build/address/0x30ccf5c0ea4f871398136dd643a0544aba39b26d
+
+* https://sepolia.lineascan.build/address/0x981beecd15b05a35206cfc44af12373b45613e71
+
+* https://sepolia.lineascan.build/address/0x3e65cabb59773a7d21132daaa587e7fc777d427c
+
+
 
 ## Multi Chain Controller w/ Layer Zero
 
