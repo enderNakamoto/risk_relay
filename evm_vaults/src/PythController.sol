@@ -94,17 +94,10 @@ contract PythController is Ownable {
         emit MarketLiquidated(marketId);
     }
     
-    // Admin function to update BTC price
-    // In production, this would be replaced with Pyth oracle integration
-    // function updateBTCPrice(uint256 newPrice) external onlyOwner {
-    //     btcPrice = newPrice;
-    //     emit BTCPriceUpdated(newPrice);
-    // }
-
     function updateBTCPrice(bytes[] calldata priceUpdate) public payable {
         // Update the prices to the latest available values and pay the required fee for it. The `priceUpdateData` data
-    // should be retrieved from our off-chain Price Service API using the `pyth-evm-js` package.
-    // See section "How Pyth Works on EVM Chains" below for more information.
+        // should be retrieved from our off-chain Price Service API using the `pyth-evm-js` package.
+        // See section "How Pyth Works on EVM Chains" below for more information.
         uint fee = pyth.getUpdateFee(priceUpdate);
         pyth.updatePriceFeeds{ value: fee }(priceUpdate);
         // Read the current price from a price feed if it is less than 60 seconds old.
@@ -112,7 +105,8 @@ contract PythController is Ownable {
         // The complete list of feed IDs is available at https://pyth.network/developers/price-feed-ids
         bytes32 priceFeedId = 0xe62df6c8b4a85fe1a67db44dc12de5db330f7ac66b72dc658afedf0f4a415b43; // BTC/USD
         PythStructs.Price memory NewPrice = pyth.getPriceNoOlderThan(priceFeedId, 60);
-        price = (uint256(uint64(NewPrice.price) * 10 ** 10));
+        btcPrice = (uint256(uint64(NewPrice.price) * 10 ** 10));
+        emit BTCPriceUpdated(btcPrice);
     }
     
     // View functions
