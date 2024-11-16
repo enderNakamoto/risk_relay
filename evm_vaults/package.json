@@ -14,6 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@flarenetwork/flare-periphery-contracts": "^0.1.16",
     "@pythnetwork/pyth-sdk-solidity": "^4.0.0"
   }
 }
