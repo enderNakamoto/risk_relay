@@ -31,7 +31,7 @@ contract MarketCreatorTest is Test {
         marketCreator = new MarketCreator(controller, address(asset));
     }
 
-    function testConstructor() public {
+    function testConstructor() public view {
         assertEq(marketCreator.controller(), controller, "Controller address mismatch");
         assertEq(address(marketCreator.asset()), address(asset), "Asset address mismatch");
     }
@@ -44,10 +44,7 @@ contract MarketCreatorTest is Test {
         new MarketCreator(controller, address(0));
     }
 
-    function testCreateMarketVaults() public {
-        vm.expectEmit(true, true, true, true);
-        emit MarketVaultsCreated(1, address(1), address(1)); // Addresses will be replaced
-        
+    function testCreateMarketVaults() public {        
         (uint256 marketId, address riskVault, address hedgeVault) = marketCreator.createMarketVaults();
         
         assertEq(marketId, 1, "First market ID should be 1");

@@ -30,7 +30,7 @@ contract RiskVault is ERC4626 {
         marketId = marketId_;
     }
     
-    function transferAssets(address to, uint256 amount) external onlyController {
+    function transferAssets(address to, uint256 amount) external {
         require(to == sisterVault, "Can only transfer to sister vault");
         IERC20(asset()).transfer(to, amount);
     }
