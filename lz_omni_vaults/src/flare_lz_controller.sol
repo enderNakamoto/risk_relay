@@ -23,10 +23,20 @@ contract FlareLzController is OApp {
     // LayerZero OApp states
     string public data;
 
+    // OAPP CUSTOM MESSAGE PROTOCOL 
+    string public constant CREATE_MARKET = "CREATE_MARKET";
+    string public constant MATURE_MARKET = "MATURE_MARKET";
+    string public constant LIQUIDATE_MARKET = "LIQUIDATE_MARKET";
+    string public constant MARKET_CREATED = "MARKET_CREATED";
+    
+    uint32 public constant DESTINATION_ID = 0;
+
+
     // Flare FTSO states
     TestFtsoV2Interface internal ftsoV2;
     // Feed IDs, see https://dev.flare.network/ftso/feeds for full list
     bytes21 public btcUsdId = 0x014254432f55534400000000000000000000000000;
+
 
 
     // events
@@ -67,10 +77,12 @@ contract FlareLzController is OApp {
             threshold: threshold,
             liquidated: false
         });
-
+        // 1. create market vaults
         emit MarketInitialized(marketId, maturityDate);
         return marketId;
     }
+
+
 
     function mature(uint256 marketId) external {
         MarketState storage market = markets[marketId];
@@ -81,7 +93,17 @@ contract FlareLzController is OApp {
         if (block.timestamp < market.maturityDate) revert MaturityDateNotPassed();
 
         market.matured = true;
-        // send message to mature
+        
+
+        bytes memory _payload = abi.encode(_message); // Encode the message as bytes
+        _lzSend(
+            _dstEid,
+            _payload,
+            _options,
+            MessagingFee(msg.value, 0), // Fee for the message (nativeFee, lzTokenFee)
+            payable(msg.sender) // The refund address in case the send call reverts
+        );
+        
         emit MarketMatured(marketId);
     }
 
@@ -94,7 +116,7 @@ contract FlareLzController is OApp {
         if (block.timestamp >= market.maturityDate) revert MaturityDateNotReached();
 
         market.liquidated = true;
-        // send message to liquidate
+        // 4. send message to liquidate
         emit MarketLiquidated(marketId);
     }
 
@@ -118,16 +140,16 @@ contract FlareLzController is OApp {
 
 
     // LayerZero OApp functions
-    function sendMessage(uint32 _dstEid, string memory _message, bytes calldata _options) external payable {
-     bytes memory _payload = abi.encode(_message); // Encode the message as bytes
-     _lzSend(
-           _dstEid,
-           _payload,
-           _options,
-           MessagingFee(msg.value, 0), // Fee for the message (nativeFee, lzTokenFee)
-           payable(msg.sender) // The refund address in case the send call reverts
-     );
-    }
+    // function sendMessage(uint32 _dstEid, string memory _message, bytes calldata _options) external payable {
+    //  bytes memory _payload = abi.encode(_message); // Encode the message as bytes
+    //  _lzSend(
+    //        _dstEid,
+    //        _payload,
+    //        _options,
+    //        MessagingFee(msg.value, 0), // Fee for the message (nativeFee, lzTokenFee)
+    //        payable(msg.sender) // The refund address in case the send call reverts
+    //  );
+    // }
 
     // function estimateFee(
     //  uint32 _dstEid,
