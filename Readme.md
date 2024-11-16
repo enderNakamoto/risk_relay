@@ -12,3 +12,11 @@ This project builds upon the foundational concepts and architecture explored in 
 
 For full transparency you can see the first attempt here: https://github.com/enderNakamoto/omnibets
 
+## Same Chain Controller 
+
+![alt text](image.png)
+
+
+## Multi Chain Controller w/ Layer Zero
+
+![alt text](image-1.png)
