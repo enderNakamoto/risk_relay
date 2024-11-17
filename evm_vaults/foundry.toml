@@ -5,8 +5,6 @@ libs = ["lib"]
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
 remappings = [
-    "@openzeppelin/=lib/openzeppelin-contracts/",
-    "@openzeppelin/contracts/=node_modules/@openzeppelin/contracts",
     "@pythnetwork/pyth-sdk-solidity/=node_modules/@pythnetwork/pyth-sdk-solidity",
     "@flarenetwork/flare-periphery-contracts/=node_modules/@flarenetwork/flare-periphery-contracts/"
     ]
