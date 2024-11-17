@@ -22,3 +22,6 @@
 [submodule "flare_btc_hedge/lib/openzeppelin-contracts"]
 	path = flare_btc_hedge/lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
+[submodule "evm_vaults/lib/openzeppelin-foundry-upgrades"]
+	path = evm_vaults/lib/openzeppelin-foundry-upgrades
+	url = https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
