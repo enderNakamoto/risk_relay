@@ -2,30 +2,15 @@
 
 ## Directory Structure
 
-```
-risk-markets/
-├── lib/
-├── src/
-│   ├── MarketCreator.sol
-│   └── vaults/
-│       ├── RiskVault.sol
-│       └── HedgeVault.sol
-├── test/
-│   ├── MarketCreator.t.sol
-│   ├── HedgeVault.t.sol 
-│   ├── RiskVault.t.sol
-│   └── mocks/
-│       └── MockToken.sol
-└── foundry.toml
-```
 
 ## Risk Markets Contracts
 
-This is a Solidity-based project that implements a decentralized risk markets system. The system consists of three main components:
+This is a Solidity-based project that implements a decentralized risk markets system. The system consists of four main components:
 
 * **MarketCreator**: This contract is responsible for creating and managing risk and hedge vaults for each market.
 * **RiskVault**: This contract represents the "risk" side of a market, where users can deposit funds to take on risk.
 * **HedgeVault**: This contract represents the "hedge" side of a market, where users can deposit funds to hedge against the risks.
+* **Controller** This contract gets data from Oracle and either matures or liquidates the vaults.
 
 ### Architecture Overview
 
@@ -57,7 +42,20 @@ The tests provided in the project demonstrate the expected usage and behavior of
 
 
 ## With Pyth Controller - Pyth as Price Oracle
-- Mantle, Morph , Linea 
 
 ![alt text](image.png)
+
+## Contracts 
+
+#### Mantle: 
+* https://explorer.sepolia.mantle.xyz/address/0x18975871ab7e57e0f26fdf429592238541051fb0
+* https://explorer.sepolia.mantle.xyz/address/0x30ccf5c0ea4f871398136dd643a0544aba39b26d    
+* https://explorer.sepolia.mantle.xyz/address/0x981beecd15b05a35206cfc44af12373b45613e71
+#### Morph: 
+* https://explorer-api-holesky.morphl2.io/address/0x18975871ab7e57e0f26fdf429592238541051fb0
+* https://explorer-api-holesky.morphl2.io/address/0x981beecd15b05a35206cfc44af12373b45613e71
+#### Linea 
+* https://sepolia.lineascan.build/address/0x30ccf5c0ea4f871398136dd643a0544aba39b26d
+* https://sepolia.lineascan.build/address/0x981beecd15b05a35206cfc44af12373b45613e71
+* https://sepolia.lineascan.build/address/0x3e65cabb59773a7d21132daaa587e7fc777d427c
 
