@@ -8,6 +8,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./MarketCreator.sol";
 
 contract FlareController is Ownable {
+
+    // HyperLane states
+    IMailbox public mailbox;
+    uint32 destinationChain;
+
+    string public constant  CREATE = "create";
+    string public constant  MATURE = "mature";
+    string public constant  LIQUIDATE = "liquidate";
+
+
     // conroller states
     MarketCreator public marketCreator;
     struct MarketState {
@@ -20,7 +30,7 @@ contract FlareController is Ownable {
     uint256 private nextMarketId;
     uint256 public btcPrice;
     mapping(uint256 => MarketState) public markets;
-
+    
 
     // Flare FTSO states
     FtsoV2Interface internal ftsoV2;
@@ -49,7 +59,12 @@ contract FlareController is Ownable {
     error MarketAlreadyDelayed();
     error InvalidMaturityDate();
 
-    constructor(address _ftsoV2, address _feeCalc) Ownable() {
+    constructor(
+        address _ftsoV2, 
+        address _feeCalc,
+        address mailboxAddress,
+        uint32 _destinationChain
+        ) Ownable() {
         // market stuff 
         nextMarketId = 1; // Start from 1 instead of 0
 
@@ -59,6 +74,10 @@ contract FlareController is Ownable {
         ftsoV2 = FtsoV2Interface(_ftsoV2);
         feeCalc = IFeeCalculator(_feeCalc);
         feedIds.push(btcUsdId);
+
+        // HyperLane stuff
+        mailbox = IMailbox(mailboxAddress);
+        destinationChain = _destinationChain;
     }
 
     function setMarketCreator(address newMarketCreator) external onlyOwner {
@@ -82,19 +101,10 @@ contract FlareController is Ownable {
     function bytes32ToAddress(bytes32 _buf) internal pure returns (address) {
         return address(uint160(uint256(_buf)));
     }
-
-    function handle(
-        uint32 _origin,
-        bytes32 _sender,
-        bytes calldata _data
-    ) external payable returns(string memory, uint32) {
-        emit Received(_origin, _sender, msg.value, string(_data));
-        // Route Actions
-        return (string(_data), _origin);
-    }
-
+    
     function initializeMarket(uint256 maturityDate, uint256 threshold) 
-        external 
+        external
+        payable
         returns (uint256 marketId) 
     {
         if (maturityDate <= block.timestamp) revert InvalidMaturityDate();
@@ -110,11 +120,17 @@ contract FlareController is Ownable {
             liquidated: false
         });
 
+        mailbox.dispatch{value: msg.value}(
+            destinationChain,
+            addressToBytes32(address(marketCreator)),
+            bytes(abi.encode(CREATE, marketId)
+        ));
+
         emit MarketInitialized(marketId, maturityDate);
         return marketId;
     }
 
-    function mature(uint256 marketId) external {
+    function mature(uint256 marketId) external payable {
         MarketState storage market = markets[marketId];
         
         if (market.maturityDate == 0) revert MarketNotFound();
@@ -125,12 +141,18 @@ contract FlareController is Ownable {
         market.matured = true;
         
         // Execute maturity on market creator
-        marketCreator.controllerMature(marketId);
+        // marketCreator.controllerMature(marketId);
+
+        mailbox.dispatch{value: msg.value}(
+            destinationChain,
+            addressToBytes32(address(marketCreator)),
+            bytes(abi.encode(MATURE, marketId)
+        ));
         
         emit MarketMatured(marketId);
     }
 
-    function liquidate(uint256 marketId) external {
+    function liquidate(uint256 marketId) external payable {
         MarketState storage market = markets[marketId];
         
         if (market.maturityDate == 0) revert MarketNotFound();
@@ -141,7 +163,13 @@ contract FlareController is Ownable {
         market.liquidated = true;
         
         // Execute liquidation on market creator
-        marketCreator.controllerLiquidate(marketId);
+        // marketCreator.controllerLiquidate(marketId);
+
+        mailbox.dispatch{value: msg.value}(
+            destinationChain,
+            addressToBytes32(address(marketCreator)),
+            bytes(abi.encode(LIQUIDATE, marketId)
+        ));
         
         emit MarketLiquidated(marketId);
     }

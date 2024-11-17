@@ -8,6 +8,10 @@ import "./vaults/HedgeVault.sol";
 
 contract MarketCreator {
 
+    // HyperLane states
+    IMailbox public mailbox;
+    uint32 destinationChain;
+
     address public immutable controller;
     IERC20 public immutable asset;
     
@@ -35,12 +39,18 @@ contract MarketCreator {
         _;
     }
     
-    constructor(address controller_, address asset_) {
+    constructor(address controller_, 
+        address asset_, 
+        address mailboxAddress,
+        uint32 _destinationChain
+    ) {
         require(controller_ != address(0), "Invalid controller address");
         require(asset_ != address(0), "Invalid asset address");
         controller = controller_;
         asset = IERC20(asset_);
         nextMarketId = 1;
+        mailbox = IMailbox(mailboxAddress);
+        destinationChain = _destinationChain;
     }
 
 
@@ -60,14 +70,23 @@ contract MarketCreator {
         bytes calldata _data
     ) external payable returns(string memory, uint32) {
         emit Received(_origin, _sender, msg.value, string(_data));
-        // Route Actions
+        (string memory action, uint256 marketId) = abi.decode(_data,(string, uint256));
         // Liquidate
+        if (keccak256(abi.encodePacked(action)) == keccak256(abi.encodePacked("liquidate"))) {
+            controllerLiquidate(marketId);
+        }
         // Mature
+        if (keccak256(abi.encodePacked(action)) == keccak256(abi.encodePacked("mature"))) {
+            controllerMature(marketId);
+        }
         // Create Market
+        if (keccak256(abi.encodePacked(action)) == keccak256(abi.encodePacked("createMarket"))) {
+            createMarketVaults();
+        }
         return (string(_data), _origin);
     }
 
-    function controllerLiquidate(uint256 marketId) external onlyController {
+    function controllerLiquidate(uint256 marketId) public onlyController {
         MarketVaults memory vaults = marketVaults[marketId];
         if (vaults.riskVault == address(0)) revert VaultsNotFound();
         
@@ -80,7 +99,7 @@ contract MarketCreator {
         }
     }
 
-    function controllerMature(uint256 marketId) external onlyController {
+    function controllerMature(uint256 marketId) public onlyController {
         MarketVaults memory vaults = marketVaults[marketId];
         if (vaults.riskVault == address(0)) revert VaultsNotFound();
         
@@ -94,7 +113,7 @@ contract MarketCreator {
     }
     
     function createMarketVaults() 
-        external 
+        public 
         returns (
             uint256 marketId,
             address riskVault,
